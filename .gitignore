@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+*.sqlite3
+/media/
+/staticfiles/
+
+# Окружение и секреты
+.env
+
+# Тесты
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
