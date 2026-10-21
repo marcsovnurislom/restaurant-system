@@ -16,10 +16,15 @@
         {% endif %}
       {% endwith %}
       {% if dish.description %}<p class="dish-card__desc">{{ dish.description|truncatechars:90 }}</p>{% endif %}
-      <div class="dish-card__footer">
-        <span class="price">{{ dish.price|money }}</span>
-        {% if dish.weight_g %}<span class="weight">{{ dish.weight_g }} г</span>{% endif %}
-      </div>
     </div>
   </a>
+  <div class="dish-card__footer">
+    <span class="price">{{ dish.price|money }}</span>
+    {% if dish.weight_g %}<span class="weight">{{ dish.weight_g }} г</span>{% endif %}
+    <form method="post" action="{% url 'orders:cart-add' dish.slug %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}#{{ dish.category.slug }}">
+      <button type="submit" class="add-btn" aria-label="Добавить «{{ dish.name }}» в корзину">+</button>
+    </form>
+  </div>
 </article>

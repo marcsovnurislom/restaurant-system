@@ -1,0 +1,7 @@
+<fieldset class="field radio-group{% if field.errors %} field--error{% endif %}">
+  <legend class="field__label">{{ field.label }}</legend>
+  {% for radio in field %}
+    <label class="radio">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+  {% endfor %}
+  {% for error in field.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+</fieldset>

@@ -24,6 +24,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "config/settings/*" = ["F403", "F405"]
+"config/settings/test.py" = ["F403", "F405", "S105"]
 "**/tests/*" = ["S101", "S105", "S106"]
 "conftest.py" = ["S101", "S105", "S106"]
 

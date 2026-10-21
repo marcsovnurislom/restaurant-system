@@ -1,5 +1,5 @@
 <div class="field{% if field.errors %} field--error{% endif %}">
-  <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="field__optional">(необязательно)</span>{% endif %}</label>
+  <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required and not hide_optional %} <span class="field__optional">(необязательно)</span>{% endif %}</label>
   {% if min or max %}
     <input type="date" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
            value="{{ field.value|stringformat:'s'|default:'' }}" min="{{ min }}" max="{{ max }}" required>

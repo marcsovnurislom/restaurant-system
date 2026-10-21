@@ -3,14 +3,13 @@ from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.core.exceptions import Conflict
+from apps.core.errors import to_api_error
 from apps.reservations.api.filters import ReservationFilter
 from apps.reservations.api.serializers import (
     AvailabilityQuerySerializer,
@@ -31,13 +30,6 @@ from apps.users.models import User
 from apps.users.permissions import role_required
 
 CanManageReservations = role_required(User.Role.MANAGER, User.Role.WAITER)
-
-
-def to_api_error(exc: ReservationError) -> Exception:
-    """Нет свободных столов — 409 (запрос верный, но мест нет), остальное — 400."""
-    if exc.code == "no_tables":
-        return Conflict(exc.message, code=exc.code)
-    return ValidationError({"detail": exc.message}, code=exc.code)
 
 
 @extend_schema(tags=["reservations"])

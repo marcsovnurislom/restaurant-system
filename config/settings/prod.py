@@ -1,8 +1,15 @@
 """Продакшен-настройки. Все секреты обязательны и берутся из окружения."""
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *
 
 DEBUG = False
+
+# Имитация оплаты в продакшене позволила бы получать заказы бесплатно
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="stripe")
+if PAYMENT_PROVIDER == "fake":
+    raise ImproperlyConfigured("PAYMENT_PROVIDER=fake запрещён в продакшене")
 
 # Без значений по умолчанию: если переменная не задана, приложение не запустится
 SECRET_KEY = env("DJANGO_SECRET_KEY")

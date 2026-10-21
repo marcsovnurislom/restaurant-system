@@ -30,6 +30,13 @@
           <span class="price price--large">{{ dish.price|money }}</span>
           {% if dish.weight_g %}<span class="weight">{{ dish.weight_g }} г</span>{% endif %}
         </p>
+        <form method="post" action="{% url 'orders:cart-add' dish.slug %}" class="add-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label class="visually-hidden" for="quantity">Количество</label>
+          <input class="add-form__qty" id="quantity" type="number" name="quantity" value="1" min="1" max="20">
+          <button type="submit" class="button">В корзину</button>
+        </form>
       </div>
     </div>
   </div>

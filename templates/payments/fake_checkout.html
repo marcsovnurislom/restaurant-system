@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Тестовая оплата{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow">
+    <div class="card fake-pay">
+      <p class="status">Тестовый режим</p>
+      <h1 class="page-title">Оплата заказа №{{ payment.order_id }}</h1>
+      <p class="price price--large">{{ payment.amount|money }}</p>
+      <p class="form__hint">
+        Это имитация платёжной системы для разработки. Деньги не списываются.
+        В продакшене здесь будет страница Stripe.
+      </p>
+      <form method="post" class="actions">
+        {% csrf_token %}
+        <button type="submit" name="action" value="pay" class="button">Оплатить</button>
+        <button type="submit" name="action" value="fail" class="button button--secondary">Отменить оплату</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

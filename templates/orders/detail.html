@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Заказ №{{ order.pk }} — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow">
+    <h1 class="page-title">Заказ №{{ order.pk }}</h1>
+
+    <div class="card">
+      <p class="statuses">
+        <span class="status status--{{ order.status }}">{{ order.get_status_display }}</span>
+        {% if order.payment_status == "paid" %}<span class="status status--completed">Оплачен</span>{% endif %}
+      </p>
+
+      <ul class="order-items">
+        {% for item in order.items.all %}
+          <li><span>{{ item.dish_name }} × {{ item.quantity }}</span><span>{{ item.line_total|money }}</span></li>
+        {% endfor %}
+        {% if order.delivery_fee %}
+          <li><span>Доставка</span><span>{{ order.delivery_fee|money }}</span></li>
+        {% endif %}
+        <li class="order-items__total"><span>Итого</span><span>{{ order.total|money }}</span></li>
+      </ul>
+
+      <dl class="details">
+        <dt>Получение</dt>
+        <dd>{{ order.get_type_display }}{% if order.table %}, стол №{{ order.table.number }}{% endif %}{% if order.address %}: {{ order.address }}{% endif %}</dd>
+        <dt>Оплата</dt>
+        <dd>{{ order.get_payment_method_display }}</dd>
+        <dt>Имя</dt>
+        <dd>{{ order.customer_name }}, {{ order.phone }}</dd>
+        {% if order.comment %}<dt>Комментарий</dt><dd>{{ order.comment }}</dd>{% endif %}
+      </dl>
+
+      <div class="actions">
+        {% if order.awaits_online_payment %}
+          <form method="post" action="{% url 'orders:pay' order.token %}">
+            {% csrf_token %}
+            <button type="submit" class="button">Оплатить {{ order.total|money }}</button>
+          </form>
+        {% endif %}
+        {% if order.status == "new" and order.payment_status != "paid" %}
+          <form method="post" action="{% url 'orders:cancel' order.token %}" onsubmit="return confirm('Отменить заказ?');">
+            {% csrf_token %}
+            <button type="submit" class="button button--secondary">Отменить заказ</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <h2 class="card__title">История</h2>
+    <ol class="timeline">
+      {% for entry in order.history.all %}
+        <li><time>{{ entry.changed_at|date:"H:i" }}</time> {{ entry.get_to_status_display }}</li>
+      {% endfor %}
+    </ol>
+
+    <p class="form__hint">Это личная ссылка на заказ. Сохраните её, чтобы следить за статусом.</p>
+  </div>
+</section>
+{% endblock %}

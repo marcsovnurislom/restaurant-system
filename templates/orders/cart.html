@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Корзина — Чайхана Bahor{% endblock %}
+
+{% block content %}
+{% if table %}
+<div class="table-banner">
+  <div class="container">Вы за столом <strong>№{{ table.number }}</strong> · заказ принесут к столу</div>
+</div>
+{% endif %}
+
+<section class="section">
+  <div class="container">
+    <h1 class="page-title">Корзина</h1>
+
+    {% if lines %}
+    <div class="cart-layout">
+      <div>
+        <ul class="cart-list">
+          {% for line in lines %}
+          <li class="cart-line">
+            <a class="cart-line__name" href="{% url 'menu:dish-detail' line.dish.slug %}">{{ line.dish.name }}</a>
+            <span class="cart-line__price">{{ line.dish.price|money }}</span>
+            <form method="post" action="{% url 'orders:cart-update' line.dish.slug %}" class="qty">
+              {% csrf_token %}
+              <button class="qty__btn" name="quantity" value="{{ line.quantity|add:'-1' }}" aria-label="Меньше">−</button>
+              <span class="qty__value" aria-label="Количество">{{ line.quantity }}</span>
+              <button class="qty__btn" name="quantity" value="{{ line.quantity|add:'1' }}" aria-label="Больше"
+                      {% if line.quantity >= max_quantity %}disabled{% endif %}>+</button>
+            </form>
+            <span class="cart-line__total">{{ line.total|money }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="cart-sum">Сумма блюд: <strong>{{ items_total|money }}</strong></p>
+        <p class="form__hint">
+          Доставка {{ delivery_fee|money }}, бесплатно от {{ free_delivery_from|money }}.
+          Минимальный заказ на доставку — {{ min_delivery_order|money }}.
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'orders:checkout' %}" class="card form" novalidate>
+        {% csrf_token %}
+        <h2 class="card__title">Оформление</h2>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert--error" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% include "orders/_radio.html" with field=form.type %}
+        {% include "reservations/_field.html" with field=form.customer_name %}
+        {% include "reservations/_field.html" with field=form.phone %}
+        <div data-delivery-only>
+          {% include "reservations/_field.html" with field=form.address hide_optional=True %}
+        </div>
+        {% include "reservations/_field.html" with field=form.comment %}
+        {% include "orders/_radio.html" with field=form.payment_method %}
+
+        <button type="submit" class="button button--block">Оформить заказ</button>
+      </form>
+    </div>
+    {% else %}
+      <p class="empty">Корзина пуста. <a href="{% url 'menu:menu-list' %}">Перейти в меню</a></p>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  // Поле адреса нужно только для доставки
+  (function () {
+    const form = document.querySelector("form[action$='checkout/']");
+    if (!form) return;
+    const address = form.querySelector("[data-delivery-only]");
+    const sync = () => {
+      const type = form.querySelector("input[name=type]:checked");
+      address.hidden = !type || type.value !== "delivery";
+    };
+    form.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

@@ -7,6 +7,8 @@ from datetime import date, datetime, time, timedelta
 
 from django.utils import timezone
 
+from apps.core.errors import DomainError
+
 DURATION = timedelta(hours=2)
 SLOT_STEP = timedelta(minutes=30)
 OPENS_AT = time(10, 0)
@@ -15,13 +17,9 @@ MIN_LEAD_TIME = timedelta(minutes=30)
 MAX_DAYS_AHEAD = 30
 
 
-class ReservationError(Exception):
-    """Бизнес-ошибка бронирования с кодом для API и понятным текстом для гостя."""
-
-    def __init__(self, message: str, code: str) -> None:
-        super().__init__(message)
-        self.message = message
-        self.code = code
+class ReservationError(DomainError):
+    # Нет свободных столов — 409: запрос верный, но мест нет
+    conflict_codes = frozenset({"no_tables"})
 
 
 def slot_times() -> list[time]:

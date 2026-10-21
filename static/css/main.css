@@ -270,6 +270,8 @@ img {
 
 /* ---------- Карточка блюда ---------- */
 .dish-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -285,8 +287,8 @@ img {
 
 .dish-card__link {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  height: 100%;
   color: inherit;
   text-decoration: none;
 }
@@ -549,6 +551,11 @@ img {
   color: #7f1d1d;
 }
 
+.alert--warning {
+  background: #fef3c7;
+  color: #78350f;
+}
+
 .card {
   margin-bottom: 20px;
   padding: 24px;
@@ -595,6 +602,246 @@ img {
   font-weight: 500;
 }
 
+/* ---------- Корзина и заказ ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dish-card__footer {
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.dish-card__footer .weight {
+  margin-right: auto;
+}
+
+.add-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  background: var(--color-accent-dark);
+}
+
+.add-form {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.add-form__qty {
+  width: 80px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  text-align: center;
+}
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.cart-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "name qty total"
+    "price qty total";
+  gap: 2px 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-line__name {
+  grid-area: name;
+  color: var(--color-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cart-line__price {
+  grid-area: price;
+  color: var(--color-text-soft);
+  font-size: 14px;
+}
+
+.cart-line__total {
+  grid-area: total;
+  min-width: 100px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.qty {
+  grid-area: qty;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty__btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.qty__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.qty__value {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.cart-sum {
+  margin: 16px 0 4px;
+  font-size: 18px;
+}
+
+.card__title {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+.radio-group {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.radio input {
+  width: auto;
+  accent-color: var(--color-accent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.order-items {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.order-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.order-items__total {
+  border-bottom: 0 !important;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.timeline {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  color: var(--color-text-soft);
+}
+
+.timeline time {
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.statuses .status {
+  margin: 0;
+}
+
+.status--new,
+.status--cooking,
+.status--ready,
+.status--delivering {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.status--completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.fake-pay {
+  text-align: center;
+}
+
+.fake-pay .actions {
+  justify-content: center;
+}
+
 /* ---------- Подвал ---------- */
 .site-footer {
   margin-top: 40px;
@@ -636,8 +883,17 @@ img {
   }
 
   .form__row,
-  .details {
+  .details,
+  .cart-layout {
     grid-template-columns: 1fr;
+  }
+
+  .nav {
+    gap: 14px;
+  }
+
+  .cart-line__total {
+    min-width: 0;
   }
 
   .details {

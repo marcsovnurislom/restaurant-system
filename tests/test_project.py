@@ -1,6 +1,7 @@
 """Проверки проекта целиком: health, документация API."""
 
 import pytest
+from django.core.management import call_command
 from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
@@ -26,3 +27,8 @@ def test_openapi_schema_builds(client):
 
 def test_swagger_ui(client):
     assert client.get(reverse("swagger-ui")).status_code == 200
+
+
+def test_openapi_schema_has_no_warnings(tmp_path):
+    """Схема строится без предупреждений, иначе `check --deploy` в CI упадёт."""
+    call_command("spectacular", "--fail-on-warn", "--file", str(tmp_path / "schema.yml"))

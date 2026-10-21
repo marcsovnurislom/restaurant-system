@@ -46,6 +46,8 @@ def available_slots(*, day: date, guests_count: int, now: datetime | None = None
 def reservation_list_for(user) -> QuerySet[Reservation]:
     """Персонал видит все брони, гость — только свои."""
     reservations = Reservation.objects.select_related("table")
+    if not user.is_authenticated:
+        return reservations.none()
     if user.is_staff_member:
         return reservations
     return reservations.filter(user=user)

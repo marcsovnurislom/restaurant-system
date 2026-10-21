@@ -42,6 +42,8 @@ LOCAL_APPS = [
     "apps.menu",
     "apps.tables",
     "apps.reservations",
+    "apps.orders",
+    "apps.payments",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -72,6 +74,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.orders.context_processors.cart",
             ],
         },
     },
@@ -136,6 +139,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": "10/minute",
         "reservations": "20/hour",
+        "orders": "30/hour",
     },
 }
 
@@ -152,6 +156,12 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    # У нескольких моделей поле называется status: даём наборам значений понятные имена
+    "ENUM_NAME_OVERRIDES": {
+        "OrderStatusEnum": "apps.orders.models.Order.Status",
+        "ReservationStatusEnum": "apps.reservations.models.Reservation.Status",
+        "ReservationVisitStatusEnum": "apps.reservations.api.serializers.VISIT_STATUS_CHOICES",
+    },
 }
 
 # --- Celery -------------------------------------------------------------------
@@ -166,8 +176,14 @@ CELERY_TASK_SOFT_TIME_LIMIT = 4 * 60
 
 # --- Интеграции ---------------------------------------------------------------
 
-# Публичный адрес сайта: из него собираются ссылки в QR-кодах столов
+# Публичный адрес сайта: из него собираются ссылки в QR-кодах столов и возврат после оплаты
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
+# Онлайн-оплата: "fake" — локальная имитация, "stripe" — Stripe Checkout
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="fake")
+PAYMENTS_FAKE_SECRET = env("PAYMENTS_FAKE_SECRET", default="dev-only-fake-payments-secret")
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID", default="")

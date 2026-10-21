@@ -11,11 +11,15 @@ api_v1_patterns = [
     path("menu/", include("apps.menu.api.urls")),
     path("tables/", include("apps.tables.api.urls")),
     path("reservations/", include("apps.reservations.api.urls")),
+    path("orders/", include("apps.orders.api.urls")),
+    path("payments/", include("apps.payments.api.urls")),
 ]
 
 urlpatterns = [
     path("", include("apps.menu.urls")),
+    path("", include("apps.orders.urls")),
     path("reservations/", include("apps.reservations.urls")),
+    path("payments/", include("apps.payments.urls")),
     path("admin/", admin.site.urls),
     path("health/", health, name="health"),
     path("api/v1/", include(api_v1_patterns)),

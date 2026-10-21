@@ -52,5 +52,8 @@ class AvailabilitySerializer(serializers.Serializer):
     slots = serializers.ListField(child=serializers.CharField(), help_text="Время в формате HH:MM")
 
 
+VISIT_STATUS_CHOICES = [(status.value, status.label) for status in STAFF_STATUSES]
+
+
 class ReservationStatusSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=[(s.value, s.label) for s in STAFF_STATUSES])
+    status = serializers.ChoiceField(choices=VISIT_STATUS_CHOICES)

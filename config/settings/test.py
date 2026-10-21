@@ -19,5 +19,10 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # Лимиты запросов отключены, иначе тесты регистрации упираются в throttle
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
-    "DEFAULT_THROTTLE_RATES": {"auth": None, "reservations": None},
+    "DEFAULT_THROTTLE_RATES": {"auth": None, "reservations": None, "orders": None},
 }
+
+PAYMENT_PROVIDER = "fake"
+PAYMENTS_FAKE_SECRET = "test-fake-secret"
+STRIPE_SECRET_KEY = "sk_test_dummy"
+STRIPE_WEBHOOK_SECRET = "whsec_test_dummy"
