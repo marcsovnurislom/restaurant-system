@@ -39,6 +39,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.users",
+    "apps.menu",
+    "apps.tables",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -161,6 +163,9 @@ CELERY_TASK_TIME_LIMIT = 5 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 4 * 60
 
 # --- Интеграции ---------------------------------------------------------------
+
+# Публичный адрес сайта: из него собираются ссылки в QR-кодах столов
+SITE_URL = env("SITE_URL", default="http://localhost:8000")
 
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID", default="")

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Меню — Чайхана Bahor{% endblock %}
+
+{% block content %}
+{% if table %}
+<div class="table-banner">
+  <div class="container">Вы за столом <strong>№{{ table.number }}</strong> · {{ table.get_zone_display }}</div>
+</div>
+{% endif %}
+
+<section class="section">
+  <div class="container">
+    <h1 class="page-title">Меню</h1>
+
+    <div class="filters" role="group" aria-label="Фильтр по тегам">
+      <a href="?" class="chip{% if not active_tag %} chip--active{% endif %}">Все</a>
+      {% for tag in tags %}
+        <a href="?tag={{ tag.slug }}" class="chip{% if active_tag == tag.slug %} chip--active{% endif %}">{{ tag.name }}</a>
+      {% endfor %}
+    </div>
+
+    {% if categories %}
+      <nav class="category-nav" aria-label="Категории">
+        {% for category in categories %}<a href="#{{ category.slug }}">{{ category.name }}</a>{% endfor %}
+      </nav>
+
+      {% for category in categories %}
+        <section class="category" id="{{ category.slug }}">
+          <h2 class="category__title">{{ category.name }}</h2>
+          <div class="dish-grid">
+            {% for dish in category.menu_dishes %}{% include "menu/_dish_card.html" %}{% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      <p class="empty">По этому фильтру ничего не нашлось. <a href="?">Показать всё меню</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

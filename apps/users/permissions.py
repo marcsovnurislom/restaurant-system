@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.users.models import User
 
@@ -21,6 +21,25 @@ def role_required(*roles: str) -> type[HasRole]:
     """
     name = "Has" + "Or".join(role.title() for role in roles) + "Role"
     return type(name, (HasRole,), {"roles": roles})
+
+
+def read_only_or(*roles: str) -> type[BasePermission]:
+    """Читать могут все (включая анонимов), изменять — только `roles`.
+
+    Пример: меню видят гости, а редактирует только менеджер.
+    """
+    write_permission = role_required(*roles)
+
+    class ReadOnlyOrRole(BasePermission):
+        message = HasRole.message
+
+        def has_permission(self, request, view) -> bool:
+            if request.method in SAFE_METHODS:
+                return True
+            return write_permission().has_permission(request, view)
+
+    ReadOnlyOrRole.__name__ = "ReadOnlyOr" + write_permission.__name__
+    return ReadOnlyOrRole
 
 
 IsStaffMember = role_required(*User.STAFF_ROLES)

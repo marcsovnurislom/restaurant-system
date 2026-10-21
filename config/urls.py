@@ -8,9 +8,12 @@ from config.views import health
 
 api_v1_patterns = [
     path("auth/", include("apps.users.api.urls")),
+    path("menu/", include("apps.menu.api.urls")),
+    path("tables/", include("apps.tables.api.urls")),
 ]
 
 urlpatterns = [
+    path("", include("apps.menu.urls")),
     path("admin/", admin.site.urls),
     path("health/", health, name="health"),
     path("api/v1/", include(api_v1_patterns)),

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero__inner">
+    <p class="hero__eyebrow">Узбекская кухня с 1998 года</p>
+    <h1 class="hero__title">Плов из казана, свежие лепёшки из тандыра и зелёный чай</h1>
+    <p class="hero__text">Готовим на открытом огне по семейным рецептам. Закажите онлайн или приходите в гости.</p>
+    <a class="button" href="{% url 'menu:menu-list' %}">Смотреть меню</a>
+  </div>
+</section>
+
+{% if featured %}
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <h2 class="section__title">Хиты кухни</h2>
+      <a class="section__link" href="{% url 'menu:menu-list' %}">Всё меню →</a>
+    </div>
+    <div class="dish-grid">
+      {% for dish in featured %}{% include "menu/_dish_card.html" %}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section section--muted">
+  <div class="container info-grid">
+    <div class="info">
+      <h3>Адрес</h3>
+      <p>Ташкент, ул. Навои, 1</p>
+    </div>
+    <div class="info">
+      <h3>Часы работы</h3>
+      <p>Ежедневно 10:00–23:00</p>
+    </div>
+    <div class="info">
+      <h3>QR-меню</h3>
+      <p>Отсканируйте код на столе, чтобы открыть меню и сделать заказ.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}{{ dish.name }} — Чайхана Bahor{% endblock %}
+{% block description %}{{ dish.description|truncatechars:150 }}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <a class="back-link" href="{% url 'menu:menu-list' %}#{{ dish.category.slug }}">← {{ dish.category.name }}</a>
+
+    <div class="dish-detail">
+      {% if dish.image %}
+        <img class="dish-detail__img" src="{{ dish.image.url }}" alt="{{ dish.name }}">
+      {% else %}
+        <div class="dish-detail__img dish-card__img--placeholder" aria-hidden="true">{{ dish.name|first }}</div>
+      {% endif %}
+
+      <div class="dish-detail__info">
+        <h1 class="page-title">{{ dish.name }}</h1>
+        {% with tags=dish.tags.all %}
+          {% if tags %}
+            <ul class="tags">
+              {% for tag in tags %}<li class="tag tag--{{ tag.slug }}">{{ tag.name }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        {% if dish.description %}<p class="dish-detail__desc">{{ dish.description|linebreaksbr }}</p>{% endif %}
+        <p class="dish-detail__price">
+          <span class="price price--large">{{ dish.price|money }}</span>
+          {% if dish.weight_g %}<span class="weight">{{ dish.weight_g }} г</span>{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

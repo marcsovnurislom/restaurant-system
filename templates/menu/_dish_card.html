@@ -1,0 +1,25 @@
+{% load money %}
+<article class="dish-card">
+  <a class="dish-card__link" href="{% url 'menu:dish-detail' dish.slug %}">
+    {% if dish.image %}
+      <img class="dish-card__img" src="{{ dish.image.url }}" alt="{{ dish.name }}" loading="lazy">
+    {% else %}
+      <div class="dish-card__img dish-card__img--placeholder" aria-hidden="true">{{ dish.name|first }}</div>
+    {% endif %}
+    <div class="dish-card__body">
+      <h3 class="dish-card__title">{{ dish.name }}</h3>
+      {% with tags=dish.tags.all %}
+        {% if tags %}
+          <ul class="tags">
+            {% for tag in tags %}<li class="tag tag--{{ tag.slug }}">{{ tag.name }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+      {% if dish.description %}<p class="dish-card__desc">{{ dish.description|truncatechars:90 }}</p>{% endif %}
+      <div class="dish-card__footer">
+        <span class="price">{{ dish.price|money }}</span>
+        {% if dish.weight_g %}<span class="weight">{{ dish.weight_g }} г</span>{% endif %}
+      </div>
+    </div>
+  </a>
+</article>
