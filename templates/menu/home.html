@@ -6,7 +6,10 @@
     <p class="hero__eyebrow">Узбекская кухня с 1998 года</p>
     <h1 class="hero__title">Плов из казана, свежие лепёшки из тандыра и зелёный чай</h1>
     <p class="hero__text">Готовим на открытом огне по семейным рецептам. Закажите онлайн или приходите в гости.</p>
-    <a class="button" href="{% url 'menu:menu-list' %}">Смотреть меню</a>
+    <div class="hero__actions">
+      <a class="button" href="{% url 'menu:menu-list' %}">Смотреть меню</a>
+      <a class="button button--secondary" href="{% url 'reservations:create' %}">Забронировать стол</a>
+    </div>
   </div>
 </section>
 

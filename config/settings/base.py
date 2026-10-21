@@ -41,6 +41,7 @@ LOCAL_APPS = [
     "apps.users",
     "apps.menu",
     "apps.tables",
+    "apps.reservations",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -134,6 +135,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {
         "auth": "10/minute",
+        "reservations": "20/hour",
     },
 }
 

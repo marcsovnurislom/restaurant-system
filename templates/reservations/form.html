@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Бронирование — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow">
+    <h1 class="page-title">Забронировать стол</h1>
+    <p class="lead">Бронь на 2 часа. Стол подберём автоматически под количество гостей.</p>
+
+    <form method="post" class="form" novalidate
+          data-availability-url="{% url 'reservations-api:reservation-availability' %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert--error" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form__row">
+        {% include "reservations/_field.html" with field=form.date min=min_date|date:"Y-m-d" max=max_date|date:"Y-m-d" %}
+        {% include "reservations/_field.html" with field=form.guests_count %}
+      </div>
+
+      {% include "reservations/_field.html" with field=form.time %}
+      <p class="form__hint" id="slots-status" aria-live="polite"></p>
+
+      <div class="form__row">
+        {% include "reservations/_field.html" with field=form.guest_name %}
+        {% include "reservations/_field.html" with field=form.phone %}
+      </div>
+      {% include "reservations/_field.html" with field=form.email %}
+      {% include "reservations/_field.html" with field=form.comment %}
+
+      <button type="submit" class="button button--block">Забронировать</button>
+    </form>
+  </div>
+</section>
+<script src="{% static 'js/reservation-form.js' %}" defer></script>
+{% endblock %}

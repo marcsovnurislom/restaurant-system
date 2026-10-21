@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Ваша бронь — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow">
+    <h1 class="page-title">Ваша бронь</h1>
+
+    <div class="card">
+      <p class="status status--{{ reservation.status }}">{{ reservation.get_status_display }}</p>
+      <dl class="details">
+        <dt>Дата и время</dt>
+        <dd>{{ reservation.start_at|date:"j E" }}, {{ reservation.start_at|date:"l"|lower }}, {{ reservation.start_at|time:"H:i" }}–{{ reservation.end_at|time:"H:i" }}</dd>
+        <dt>Стол</dt>
+        <dd>№{{ reservation.table.number }}, {{ reservation.table.get_zone_display|lower }}</dd>
+        <dt>Гостей</dt>
+        <dd>{{ reservation.guests_count }}</dd>
+        <dt>На имя</dt>
+        <dd>{{ reservation.guest_name }}, {{ reservation.phone }}</dd>
+        {% if reservation.comment %}
+          <dt>Пожелания</dt>
+          <dd>{{ reservation.comment }}</dd>
+        {% endif %}
+      </dl>
+
+      {% if reservation.is_cancellable %}
+        <form method="post" action="{% url 'reservations:cancel' reservation.token %}"
+              onsubmit="return confirm('Отменить бронь?');">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Отменить бронь</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <p class="form__hint">Это личная ссылка на вашу бронь. Сохраните её, чтобы посмотреть или отменить бронь.</p>
+    <a class="back-link" href="{% url 'menu:menu-list' %}">Посмотреть меню →</a>
+  </div>
+</section>
+{% endblock %}

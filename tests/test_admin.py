@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from apps.menu.models import Dish
 from apps.menu.tests.factories import DishFactory, TagFactory
+from apps.reservations.tests.factories import ReservationFactory
 from apps.tables.tests.factories import TableFactory
 from apps.users.models import User
 
@@ -16,6 +17,7 @@ MODELS = [
     "menu_tag",
     "menu_dish",
     "tables_table",
+    "reservations_reservation",
 ]
 
 
@@ -24,7 +26,7 @@ def admin_client(client):
     admin = User.objects.create_superuser("admin", "admin@example.com", "x")
     client.force_login(admin)
     DishFactory(tags=[TagFactory()])
-    TableFactory()
+    ReservationFactory(table=TableFactory())
     return client
 
 

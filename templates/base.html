@@ -14,12 +14,21 @@
       <nav class="nav" aria-label="Основное меню">
         <a href="{% url 'menu:menu-list' %}"
            class="nav__link{% if request.resolver_match.url_name == 'menu-list' or request.resolver_match.url_name == 'dish-detail' %} nav__link--active{% endif %}">Меню</a>
+        <a href="{% url 'reservations:create' %}"
+           class="nav__link{% if request.resolver_match.app_name == 'reservations' %} nav__link--active{% endif %}">Бронь</a>
         <a href="tel:+998712000000" class="nav__link nav__link--phone">+998 71 200-00-00</a>
       </nav>
     </div>
   </header>
 
   <main>
+    {% if messages %}
+      <div class="container messages">
+        {% for message in messages %}
+          <div class="alert alert--{{ message.tags }}" role="status">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 

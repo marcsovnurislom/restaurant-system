@@ -1,11 +1,11 @@
 from django.db.models import ProtectedError
 from drf_spectacular.utils import extend_schema
-from rest_framework import status, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.exceptions import Conflict
 from apps.menu.api.filters import DishFilter
 from apps.menu.api.serializers import (
     CategorySerializer,
@@ -19,12 +19,6 @@ from apps.users.models import User
 from apps.users.permissions import read_only_or, role_required
 
 ManagerOrReadOnly = read_only_or(User.Role.MANAGER)
-
-
-class Conflict(APIException):
-    status_code = status.HTTP_409_CONFLICT
-    default_detail = "Объект используется и не может быть удалён."
-    default_code = "conflict"
 
 
 class MenuViewSetMixin:
