@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% load money %}
+{% load money static %}
 
 {% block title %}Заказ №{{ order.pk }} — Чайхана Bahor{% endblock %}
 
 {% block content %}
 <section class="section">
-  <div class="container container--narrow">
+  <div class="container container--narrow" id="order" data-socket-path="/ws/orders/{{ order.token }}/">
     <h1 class="page-title">Заказ №{{ order.pk }}</h1>
 
     <div class="card">
-      <p class="statuses">
-        <span class="status status--{{ order.status }}">{{ order.get_status_display }}</span>
-        {% if order.payment_status == "paid" %}<span class="status status--completed">Оплачен</span>{% endif %}
+      <p class="statuses" aria-live="polite">
+        <span class="status status--{{ order.status }}" data-status>{{ order.get_status_display }}</span>
+        <span class="status status--completed" data-paid {% if order.payment_status != "paid" %}hidden{% endif %}>Оплачен</span>
       </p>
 
       <ul class="order-items">
@@ -36,13 +36,14 @@
 
       <div class="actions">
         {% if order.awaits_online_payment %}
-          <form method="post" action="{% url 'orders:pay' order.token %}">
+          <form method="post" action="{% url 'orders:pay' order.token %}" data-pay>
             {% csrf_token %}
             <button type="submit" class="button">Оплатить {{ order.total|money }}</button>
           </form>
         {% endif %}
         {% if order.status == "new" and order.payment_status != "paid" %}
-          <form method="post" action="{% url 'orders:cancel' order.token %}" onsubmit="return confirm('Отменить заказ?');">
+          <form method="post" action="{% url 'orders:cancel' order.token %}" data-cancel
+                onsubmit="return confirm('Отменить заказ?');">
             {% csrf_token %}
             <button type="submit" class="button button--secondary">Отменить заказ</button>
           </form>
@@ -51,13 +52,17 @@
     </div>
 
     <h2 class="card__title">История</h2>
-    <ol class="timeline">
+    <ol class="timeline" data-timeline>
       {% for entry in order.history.all %}
         <li><time>{{ entry.changed_at|date:"H:i" }}</time> {{ entry.get_to_status_display }}</li>
       {% endfor %}
     </ol>
 
-    <p class="form__hint">Это личная ссылка на заказ. Сохраните её, чтобы следить за статусом.</p>
+    <p class="form__hint">
+      Статус обновляется сам, страницу перезагружать не нужно.
+      Это личная ссылка на заказ: сохраните её, чтобы следить за статусом.
+    </p>
   </div>
 </section>
+<script src="{% static 'js/order-status.js' %}" defer></script>
 {% endblock %}

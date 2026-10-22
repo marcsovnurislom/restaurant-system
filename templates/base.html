@@ -18,6 +18,10 @@
            class="nav__link{% if request.resolver_match.app_name == 'reservations' %} nav__link--active{% endif %}">Бронь</a>
         <a href="{% url 'orders:cart' %}"
            class="nav__link nav__cart{% if request.resolver_match.url_name == 'cart' %} nav__link--active{% endif %}">Корзина{% if cart_count %} <span class="badge">{{ cart_count }}</span>{% endif %}</a>
+        {% if user.is_authenticated and user.is_staff_member %}
+          <a href="{% url 'kitchen:board' %}"
+             class="nav__link{% if request.resolver_match.app_name == 'kitchen' %} nav__link--active{% endif %}">Кухня</a>
+        {% endif %}
         <a href="tel:+998712000000" class="nav__link nav__link--phone">+998 71 200-00-00</a>
       </nav>
     </div>

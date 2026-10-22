@@ -22,6 +22,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {"auth": None, "reservations": None, "orders": None},
 }
 
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
 PAYMENT_PROVIDER = "fake"
 PAYMENTS_FAKE_SECRET = "test-fake-secret"
 STRIPE_SECRET_KEY = "sk_test_dummy"

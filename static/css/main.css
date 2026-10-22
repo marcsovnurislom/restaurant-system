@@ -842,6 +842,178 @@ img {
   justify-content: center;
 }
 
+/* ---------- Экран кухни ---------- */
+.board-page {
+  padding: 24px 16px 40px;
+}
+
+.board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-bottom: 20px;
+}
+
+.board-head .page-title {
+  margin: 0;
+}
+
+.board-head__user {
+  margin-left: auto;
+  color: var(--color-text-soft);
+  font-size: 14px;
+}
+
+.connection {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection[data-state="online"] {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.connection[data-state="offline"] {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+  align-items: start;
+}
+
+.board__column {
+  min-height: 200px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--color-muted);
+}
+
+.board__title {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.board__count {
+  color: var(--color-text-soft);
+}
+
+.board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-card {
+  padding: 12px;
+  border-left: 4px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.order-card--dine_in {
+  border-left-color: var(--color-success);
+}
+
+.order-card--delivery {
+  border-left-color: #4338ca;
+}
+
+.order-card--pickup {
+  border-left-color: var(--color-accent);
+}
+
+.order-card--fresh {
+  animation: fresh 2s ease-out;
+}
+
+@keyframes fresh {
+  from {
+    box-shadow: 0 0 0 4px var(--color-accent-soft), var(--shadow);
+  }
+}
+
+.order-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.order-card__age {
+  color: var(--color-text-soft);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-card__where {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.order-card__items {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.order-card__qty {
+  display: inline-block;
+  min-width: 28px;
+  font-weight: 700;
+}
+
+.order-card__comment {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #fef3c7;
+  font-size: 13px;
+}
+
+.order-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.button--small {
+  padding: 7px 14px;
+  font-size: 14px;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.login-form {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
 /* ---------- Подвал ---------- */
 .site-footer {
   margin-top: 40px;

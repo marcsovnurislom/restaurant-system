@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from django.db import transaction
 
+from apps.kitchen.broadcast import notify_order_changed
 from apps.menu.models import Dish
 from apps.menu.templatetags.money import money
 from apps.orders.models import MAX_QUANTITY, Order, OrderItem, OrderStatusHistory
@@ -95,6 +96,7 @@ def order_create(
             for dish_id, quantity in quantities.items()
         )
         OrderStatusHistory.objects.create(order=order, to_status=Order.Status.NEW, changed_by=user)
+        notify_order_changed(order.pk)
 
     logger.info("Заказ %s создан: %s, %s сум", order.pk, order_type, order.total)
     return order
@@ -153,6 +155,7 @@ def order_mark_paid(*, order: Order) -> Order:
             logger.warning(
                 "Заказ %s оплачен в статусе %s: нужен возврат денег", order.pk, order.status
             )
+            notify_order_changed(order.pk)
     return order
 
 
@@ -163,4 +166,5 @@ def _set_status(order: Order, to_status: str, *, changed_by) -> None:
     OrderStatusHistory.objects.create(
         order=order, from_status=from_status, to_status=to_status, changed_by=changed_by
     )
+    notify_order_changed(order.pk)
     logger.info("Заказ %s: %s → %s", order.pk, from_status, to_status)

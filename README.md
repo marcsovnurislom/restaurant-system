@@ -14,7 +14,7 @@ Celery + Redis · Django Channels · Docker · pytest · GitHub Actions
 | 2. Меню и столы | Категории, блюда, стоп-лист, QR-коды столов, сайт меню | ✅ |
 | 3. Бронирование | Автоподбор стола, защита от двойной брони, форма на сайте | ✅ |
 | 4. Заказы и оплата | Корзина, state machine статусов, Stripe test mode, webhook | ✅ |
-| 5. Real-time | Экран кухни и статус заказа через WebSocket | ⏳ |
+| 5. Real-time | Экран кухни и статус заказа через WebSocket | ✅ |
 | 6. Фоновые задачи и аналитика | Напоминания, автоотмена, Telegram, дашборд | ⏳ |
 | 7. Продакшен | Деплой, финальная документация | ⏳ |
 
@@ -43,6 +43,7 @@ docker compose exec web python manage.py seed_data --with-staff
 | http://localhost:8000/menu/ | Меню с фильтром по тегам |
 | http://localhost:8000/reservations/new/ | Бронирование столика |
 | http://localhost:8000/cart/ | Корзина и оформление заказа |
+| http://localhost:8000/staff/kitchen/ | Экран кухни (вход: `demo_cook`, `demo_manager` и др.) |
 
 ### Онлайн-оплата
 
@@ -106,6 +107,28 @@ docker compose exec web ruff check .
 | POST | `/api/v1/payments/checkout/{token}/` | все | Начать онлайн-оплату, в ответе `redirect_url` |
 | POST | `/api/v1/payments/webhook/{provider}/` | платёжная система | Уведомление об оплате (проверка подписи) |
 
+### WebSocket
+
+| URL | Доступ | Что приходит |
+|---|---|---|
+| `ws/kitchen/` | персонал (сессия) | `order.updated` — заказ целиком: позиции, комментарий, кнопки по ролям |
+| `ws/orders/{token}/` | владелец ссылки на заказ | `order.updated` — статус, оплата, история (без персональных данных) |
+
+```mermaid
+sequenceDiagram
+    participant Cook as Повар (экран кухни)
+    participant API as Django API
+    participant DB as PostgreSQL
+    participant Layer as Redis (слой Channels)
+    participant Guest as Гость (страница заказа)
+    Cook->>API: POST /orders/2/transition/ {"status": "cooking"}
+    API->>DB: UPDATE под select_for_update + история
+    DB-->>API: COMMIT
+    API->>Layer: on_commit → group_send("kitchen"), group_send("order_…")
+    Layer-->>Cook: order.updated — карточка переезжает в «Готовятся»
+    Layer-->>Guest: order.updated — статус «Готовится» без перезагрузки
+```
+
 ### Статусы заказа
 
 ```mermaid
@@ -144,6 +167,7 @@ apps/
   reservations/    бронирование: правила, подбор стола, форма на сайте
   orders/          корзина, заказы, state machine статусов
   payments/        платежи, провайдеры (fake, Stripe), webhook
+  kitchen/         экран кухни, WebSocket-consumers, рассылка событий
   core/            общие бизнес-ошибки и их перевод в ответы API
     api/           сериализаторы, views, urls
     services.py    бизнес-логика (запись)
@@ -227,6 +251,20 @@ static/css/        стили
 - **Имитация оплаты для разработки.** Путь «оформил → оплатил → заказ
   подтверждён» проверяется локально и в тестах без ключей. В продакшене
   `PAYMENT_PROVIDER=fake` запрещён: приложение не запустится.
+- **Сокеты только для чтения.** Сменить статус можно только через HTTP API,
+  где уже есть права, CSRF и state machine. Сокет просто присылает
+  обновлённый заказ, поэтому логику не нужно дублировать в двух местах.
+- **Рассылка после коммита (`transaction.on_commit`).** Экраны не покажут
+  изменение, которое потом откатится. А с `robust=True` падение Redis
+  не ломает оформление заказа: ошибка только пишется в лог.
+- **Экран кухни сам восстанавливается после обрыва связи.** Он переподключается
+  с экспоненциальной задержкой и заново запрашивает список заказов,
+  чтобы не потерять события, пришедшие без связи.
+- **Гость получает в сокет только свой заказ и без чужих данных.**
+  Группа привязана к секретному токену заказа, а в сообщении
+  нет телефона, адреса и кнопок персонала.
+- **Данные для сокета проверяются на msgpack.** Redis-слой Channels не умеет
+  передавать `Decimal` и `datetime`, и тест ловит это заранее.
 - **Схема API строится без предупреждений.** Тест запускает
   `spectacular --fail-on-warn`, иначе `check --deploy` в CI упадёт.
 - **Продакшен-настройки без значений по умолчанию для секретов.**

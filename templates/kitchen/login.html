@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Вход для персонала — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow">
+    <form method="post" class="card form login-form" novalidate>
+      {% csrf_token %}
+      <h1 class="page-title">Вход для персонала</h1>
+      {% if form.non_field_errors %}
+        <div class="alert alert--error" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+      {% include "reservations/_field.html" with field=form.username %}
+      {% include "reservations/_field.html" with field=form.password %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="button button--block">Войти</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

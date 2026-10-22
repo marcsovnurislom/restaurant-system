@@ -22,6 +22,8 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.
 # --- Приложения ---------------------------------------------------------------
 
 DJANGO_APPS = [
+    # daphne первым: тогда runserver запускает ASGI-сервер с поддержкой WebSocket
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -31,6 +33,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "channels",
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
@@ -44,6 +47,7 @@ LOCAL_APPS = [
     "apps.reservations",
     "apps.orders",
     "apps.payments",
+    "apps.kitchen",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -95,6 +99,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- Пользователи -------------------------------------------------------------
 
 AUTH_USER_MODEL = "users.User"
+
+LOGIN_URL = "kitchen:login"
+LOGIN_REDIRECT_URL = "kitchen:board"
+LOGOUT_REDIRECT_URL = "kitchen:login"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -167,6 +175,21 @@ SPECTACULAR_SETTINGS = {
 # --- Celery -------------------------------------------------------------------
 
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+
+# --- Channels (WebSocket) ----------------------------------------------------
+
+# Слой каналов пересылает события между процессами: заказ изменился в одном
+# воркере — сообщение получают все открытые экраны кухни. "memory" подходит
+# только для одного процесса (локальный запуск без Redis).
+if env("CHANNEL_LAYER", default="redis") == "memory":
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        },
+    }
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL

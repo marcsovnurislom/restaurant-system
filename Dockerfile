@@ -20,4 +20,5 @@ USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# ASGI-сервер: обычный WSGI (gunicorn) не умеет WebSocket
+CMD ["daphne", "--bind", "0.0.0.0", "--port", "8000", "config.asgi:application"]
