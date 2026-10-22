@@ -58,6 +58,7 @@ class Reservation(models.Model):
     comment = models.TextField("комментарий", max_length=500, blank=True)
     created_at = models.DateTimeField("создана", auto_now_add=True)
     cancelled_at = models.DateTimeField("отменена", null=True, blank=True)
+    reminder_sent_at = models.DateTimeField("напоминание отправлено", null=True, blank=True)
 
     objects = ReservationQuerySet.as_manager()
 

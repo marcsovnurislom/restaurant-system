@@ -1,16 +1,23 @@
-"""Демо-данные для разработки и показа проекта: python manage.py seed_data [--with-staff]
+"""Демо-данные для разработки и показа проекта:
+
+    python manage.py seed_data [--with-staff] [--with-orders 300]
 
 Команду можно запускать повторно: записи ищутся по slug, номеру или username
-и обновляются, дубликаты не появляются.
+и обновляются, дубликаты не появляются. Демо-заказы пересоздаются заново.
 """
 
 import os
+import random
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from apps.menu.models import Category, Dish, Tag
+from apps.orders.models import Order, OrderItem, OrderStatusHistory
+from apps.orders.rules import delivery_fee_for
 from apps.tables.models import Table
 from apps.users.models import User
 
@@ -202,6 +209,12 @@ STAFF = [
     ("demo_courier", User.Role.COURIER),
 ]
 
+# По этому имени демо-заказы находятся и пересоздаются при повторном запуске
+DEMO_CUSTOMER = "Демо-гость"
+DEMO_ORDER_DAYS = 60
+# Час заказа и его вес: пики в обед и вечером, как в настоящей чайхане
+ORDER_HOURS = {11: 2, 12: 6, 13: 8, 14: 5, 15: 2, 16: 2, 17: 3, 18: 6, 19: 9, 20: 8, 21: 4, 22: 2}
+
 
 class Command(BaseCommand):
     help = "Заполняет базу демо-данными: меню, столы и (по флагу) сотрудники."
@@ -211,6 +224,13 @@ class Command(BaseCommand):
             "--with-staff",
             action="store_true",
             help="Создать демо-сотрудников (пароль из SEED_STAFF_PASSWORD)",
+        )
+        parser.add_argument(
+            "--with-orders",
+            type=int,
+            default=0,
+            metavar="N",
+            help=f"Создать N заказов за последние {DEMO_ORDER_DAYS} дней (для дашборда)",
         )
 
     @transaction.atomic
@@ -248,7 +268,64 @@ class Command(BaseCommand):
         if options["with_staff"]:
             created = self._create_staff()
             summary += f", новых сотрудников: {created}"
+        if options["with_orders"]:
+            self._create_demo_orders(options["with_orders"])
+            summary += f", демо-заказов: {options['with_orders']}"
         self.stdout.write(self.style.SUCCESS(summary))
+
+    def _create_demo_orders(self, count: int) -> None:
+        """История заказов напрямую в БД, мимо сервиса.
+
+        Сервис разослал бы каждый заказ в Telegram и на экран кухни, а для
+        прошлых заказов это не нужно (и не должно требовать запущенного Redis).
+        Seed фиксирован, поэтому данные одинаковые при каждом запуске.
+        """
+        Order.objects.filter(customer_name=DEMO_CUSTOMER).delete()
+        rng = random.Random(42)  # noqa: S311 — демо-данные, не криптография
+        dishes = list(Dish.objects.all())
+        tables = list(Table.objects.all())
+        hours, weights = list(ORDER_HOURS), list(ORDER_HOURS.values())
+        today = timezone.localdate()
+
+        for _ in range(count):
+            day = today - timedelta(days=rng.randrange(DEMO_ORDER_DAYS))
+            created_at = timezone.make_aware(
+                datetime.combine(day, time(rng.choices(hours, weights)[0], rng.randrange(60)))
+            )
+            lines = [(dish, rng.randint(1, 3)) for dish in rng.sample(dishes, rng.randint(1, 4))]
+            items_total = sum(dish.price * quantity for dish, quantity in lines)
+            order_type = rng.choice(list(Order.Type))
+            delivery_fee = delivery_fee_for(order_type, items_total)
+            status = rng.choices([Order.Status.COMPLETED, Order.Status.CANCELLED], [9, 1])[0]
+
+            order = Order.objects.create(
+                type=order_type,
+                status=status,
+                table=rng.choice(tables) if order_type == Order.Type.DINE_IN else None,
+                address="ул. Навои, 1" if order_type == Order.Type.DELIVERY else "",
+                payment_method=Order.PaymentMethod.CASH,
+                payment_status=Order.PaymentStatus.PAID
+                if status == Order.Status.COMPLETED
+                else Order.PaymentStatus.UNPAID,
+                customer_name=DEMO_CUSTOMER,
+                phone="+998900000000",
+                items_total=items_total,
+                delivery_fee=delivery_fee,
+                total=items_total + delivery_fee,
+            )
+            # auto_now_add не даёт задать дату при создании, поэтому отдельный UPDATE
+            Order.objects.filter(pk=order.pk).update(created_at=created_at, updated_at=created_at)
+            OrderItem.objects.bulk_create(
+                OrderItem(
+                    order=order,
+                    dish=dish,
+                    dish_name=dish.name,
+                    unit_price=dish.price,
+                    quantity=quantity,
+                )
+                for dish, quantity in lines
+            )
+            OrderStatusHistory.objects.create(order=order, to_status=status)
 
     def _create_staff(self) -> int:
         password = os.environ.get("SEED_STAFF_PASSWORD", DEFAULT_STAFF_PASSWORD)

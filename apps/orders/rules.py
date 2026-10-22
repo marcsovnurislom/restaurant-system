@@ -1,5 +1,6 @@
 """Правила заказов: доставка и разрешённые переходы статусов."""
 
+from datetime import timedelta
 from decimal import Decimal
 
 from apps.core.errors import DomainError
@@ -9,6 +10,8 @@ from apps.users.models import User
 DELIVERY_FEE = Decimal("15000")
 FREE_DELIVERY_FROM = Decimal("150000")
 MIN_DELIVERY_ORDER = Decimal("50000")
+# Сколько ждём онлайн-оплату, прежде чем отменить заказ и освободить кухню
+UNPAID_ORDER_TTL = timedelta(minutes=15)
 
 Status = Order.Status
 Role = User.Role

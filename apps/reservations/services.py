@@ -1,11 +1,16 @@
 import logging
 from datetime import datetime
 
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.core.tasks import delay_on_commit
+from apps.notifications.tasks import notify_new_reservation
 from apps.reservations.models import Reservation
-from apps.reservations.rules import DURATION, ReservationError, validate_start
+from apps.reservations.rules import DURATION, REMINDER_BEFORE, ReservationError, validate_start
 from apps.tables.models import Table
 
 logger = logging.getLogger(__name__)
@@ -69,6 +74,7 @@ def reservation_create(
             start_at=start_at,
             end_at=end_at,
         )
+        delay_on_commit(notify_new_reservation, reservation.pk)
 
     logger.info("Бронь %s: стол №%s на %s", reservation.pk, table.number, start_at.isoformat())
     return reservation
@@ -105,3 +111,62 @@ def reservation_set_status(*, reservation: Reservation, status: str) -> Reservat
     reservation.status = status
     reservation.save(update_fields=["status"])
     return reservation
+
+
+def reservation_send_due_reminders(*, now: datetime | None = None) -> int:
+    """Письмо-напоминание гостям, у которых бронь в ближайшие 2 часа.
+
+    Каждая бронь обрабатывается в своей транзакции: если письмо одному гостю
+    не ушло, остальные всё равно получат свои, а неудачное повторится
+    при следующем запуске. reminder_sent_at не даёт отправить письмо дважды,
+    а skip_locked — двум воркерам взять одну бронь одновременно.
+    """
+    now = now or timezone.now()
+    due_ids = list(
+        Reservation.objects.active()
+        .filter(
+            reminder_sent_at__isnull=True,
+            start_at__gt=now,
+            start_at__lte=now + REMINDER_BEFORE,
+        )
+        .exclude(email="")
+        .values_list("pk", flat=True)
+    )
+
+    sent = 0
+    for reservation_id in due_ids:
+        try:
+            with transaction.atomic():
+                reservation = (
+                    Reservation.objects.select_for_update(skip_locked=True)
+                    .select_related("table")
+                    .filter(pk=reservation_id, reminder_sent_at__isnull=True)
+                    .first()
+                )
+                if reservation is None:
+                    continue
+                _send_reminder_email(reservation)
+                reservation.reminder_sent_at = now
+                reservation.save(update_fields=["reminder_sent_at"])
+                sent += 1
+        except Exception:
+            logger.exception("Не удалось отправить напоминание о брони %s", reservation_id)
+    return sent
+
+
+def _send_reminder_email(reservation: Reservation) -> None:
+    start = timezone.localtime(reservation.start_at)
+    link = settings.SITE_URL.rstrip("/") + reverse(
+        "reservations:detail", kwargs={"token": reservation.token}
+    )
+    send_mail(
+        subject="Напоминание о брони в чайхане Bahor",
+        message=(
+            f"Здравствуйте, {reservation.guest_name}!\n\n"
+            f"Ждём вас сегодня в {start:%H:%M}. Стол №{reservation.table.number}, "
+            f"гостей: {reservation.guests_count}.\n\n"
+            f"Если планы изменились, отмените бронь по ссылке:\n{link}\n"
+        ),
+        from_email=None,
+        recipient_list=[reservation.email],
+    )

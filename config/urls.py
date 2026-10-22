@@ -13,6 +13,7 @@ api_v1_patterns = [
     path("reservations/", include("apps.reservations.api.urls")),
     path("orders/", include("apps.orders.api.urls")),
     path("payments/", include("apps.payments.api.urls")),
+    path("analytics/", include("apps.analytics.api.urls")),
 ]
 
 urlpatterns = [
@@ -21,6 +22,7 @@ urlpatterns = [
     path("reservations/", include("apps.reservations.urls")),
     path("payments/", include("apps.payments.urls")),
     path("staff/", include("apps.kitchen.urls")),
+    path("staff/analytics/", include("apps.analytics.urls")),
     path("admin/", admin.site.urls),
     path("health/", health, name="health"),
     path("api/v1/", include(api_v1_patterns)),

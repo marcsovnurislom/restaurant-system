@@ -21,6 +21,10 @@
         {% if user.is_authenticated and user.is_staff_member %}
           <a href="{% url 'kitchen:board' %}"
              class="nav__link{% if request.resolver_match.app_name == 'kitchen' %} nav__link--active{% endif %}">Кухня</a>
+          {% if user.role == "manager" or user.role == "admin" or user.is_superuser %}
+            <a href="{% url 'analytics:dashboard' %}"
+               class="nav__link{% if request.resolver_match.app_name == 'analytics' %} nav__link--active{% endif %}">Аналитика</a>
+          {% endif %}
         {% endif %}
         <a href="tel:+998712000000" class="nav__link nav__link--phone">+998 71 200-00-00</a>
       </nav>

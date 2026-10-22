@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static money analytics %}
+
+{% block title %}Аналитика — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="dash-head">
+      <h1 class="page-title">Аналитика</h1>
+      <p class="dash-period">{{ period.date_from|date:"j E" }} — {{ period.date_to|date:"j E Y" }}</p>
+    </div>
+
+    <form method="get" class="dash-filters" aria-label="Период">
+      {% for days, preset in presets %}
+        <a class="chip{% if preset == period %} chip--active{% endif %}"
+           href="?date_from={{ preset.date_from|date:'Y-m-d' }}&date_to={{ preset.date_to|date:'Y-m-d' }}">{{ days }} дней</a>
+      {% endfor %}
+      <label class="dash-filters__date">с <input type="date" name="date_from" value="{{ period.date_from|date:'Y-m-d' }}"></label>
+      <label class="dash-filters__date">по <input type="date" name="date_to" value="{{ period.date_to|date:'Y-m-d' }}"></label>
+      <button type="submit" class="button button--small">Показать</button>
+    </form>
+    {% if period_error %}<div class="alert alert--error" role="alert">{{ period_error }}</div>{% endif %}
+
+    <div class="kpis">
+      {% for kpi in kpis %}
+        <div class="kpi">
+          <p class="kpi__label">{{ kpi.label }}</p>
+          <p class="kpi__value">{{ kpi|kpi_value }}</p>
+          <p class="kpi__change">{% if kpi.change %}{{ kpi.change }} к прошлым {{ period.days }} дн.{% else %}нет данных для сравнения{% endif %}</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="dash-grid">
+      <section class="card dash-card dash-card--wide">
+        <h2 class="card__title">Выручка по дням</h2>
+        <p class="dash-note">Только выполненные заказы</p>
+        <div class="chart"><canvas id="revenue-chart" role="img" aria-label="Столбчатая диаграмма выручки по дням"></canvas></div>
+        <details class="dash-table">
+          <summary>Показать таблицей</summary>
+          <table>
+            <thead><tr><th>День</th><th>Заказов</th><th>Выручка</th></tr></thead>
+            <tbody>
+              {% for row in revenue %}<tr><td>{{ row.date|date:"d.m" }}</td><td>{{ row.orders }}</td><td>{{ row.revenue|money }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </details>
+      </section>
+
+      <section class="card dash-card">
+        <h2 class="card__title">Топ блюд по выручке</h2>
+        {% if top_dishes %}
+          <ol class="top-dishes">
+            {% for dish in top_dishes %}
+              <li class="top-dish">
+                <span class="top-dish__rank">{{ dish.rank }}</span>
+                <span class="top-dish__name">{{ dish.name }}</span>
+                <span class="top-dish__value">{{ dish.revenue|money }}</span>
+                <span class="top-dish__meta">{{ dish.quantity }} шт.</span>
+                <span class="top-dish__bar" aria-hidden="true"><span style="width: {{ dish.share|floatformat:0 }}%"></span></span>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="empty">За период нет выполненных заказов.</p>
+        {% endif %}
+      </section>
+
+      <section class="card dash-card">
+        <h2 class="card__title">Загрузка по часам</h2>
+        <p class="dash-note">Число заказов по времени оформления, без отменённых</p>
+        <div class="chart"><canvas id="hourly-chart" role="img" aria-label="Столбчатая диаграмма числа заказов по часам суток"></canvas></div>
+        <details class="dash-table">
+          <summary>Показать таблицей</summary>
+          <table>
+            <thead><tr><th>Час</th><th>Заказов</th></tr></thead>
+            <tbody>
+              {% for row in hourly %}<tr><td>{{ row.hour|stringformat:"02d" }}:00</td><td>{{ row.orders }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </details>
+      </section>
+    </div>
+  </div>
+</section>
+
+{{ chart_data|json_script:"chart-data" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% endblock %}

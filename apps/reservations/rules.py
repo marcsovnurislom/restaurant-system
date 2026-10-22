@@ -15,6 +15,7 @@ OPENS_AT = time(10, 0)
 CLOSES_AT = time(23, 0)
 MIN_LEAD_TIME = timedelta(minutes=30)
 MAX_DAYS_AHEAD = 30
+REMINDER_BEFORE = timedelta(hours=2)
 
 
 class ReservationError(DomainError):

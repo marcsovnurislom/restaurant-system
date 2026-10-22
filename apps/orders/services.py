@@ -1,16 +1,21 @@
 import logging
 from collections import Counter
 from collections.abc import Iterable
+from datetime import datetime
 
 from django.db import transaction
+from django.utils import timezone
 
+from apps.core.tasks import delay_on_commit
 from apps.kitchen.broadcast import notify_order_changed
 from apps.menu.models import Dish
 from apps.menu.templatetags.money import money
+from apps.notifications.tasks import notify_new_order
 from apps.orders.models import MAX_QUANTITY, Order, OrderItem, OrderStatusHistory
 from apps.orders.rules import (
     MIN_DELIVERY_ORDER,
     TRANSITIONS,
+    UNPAID_ORDER_TTL,
     OrderError,
     check_transition_for_type,
     delivery_fee_for,
@@ -97,6 +102,9 @@ def order_create(
         )
         OrderStatusHistory.objects.create(order=order, to_status=Order.Status.NEW, changed_by=user)
         notify_order_changed(order.pk)
+        # Онлайн-заказ менеджер увидит после оплаты: неоплаченный может так и не стать заказом
+        if payment_method == Order.PaymentMethod.CASH:
+            delay_on_commit(notify_new_order, order.pk)
 
     logger.info("Заказ %s создан: %s, %s сум", order.pk, order_type, order.total)
     return order
@@ -150,6 +158,7 @@ def order_mark_paid(*, order: Order) -> Order:
         order.save(update_fields=["payment_status", "updated_at"])
         if order.status == Order.Status.NEW:
             _set_status(order, Order.Status.CONFIRMED, changed_by=None)
+            delay_on_commit(notify_new_order, order.pk)
         else:
             # Например, менеджер отменил заказ, пока гость был на странице оплаты
             logger.warning(
@@ -157,6 +166,32 @@ def order_mark_paid(*, order: Order) -> Order:
             )
             notify_order_changed(order.pk)
     return order
+
+
+def order_cancel_unpaid(*, now: datetime | None = None) -> int:
+    """Отменяет онлайн-заказы, которые не оплатили за UNPAID_ORDER_TTL.
+
+    Условия проверяются ещё раз под блокировкой: webhook об оплате мог прийти
+    между выборкой и отменой, и тогда заказ отменять уже нельзя.
+    """
+    deadline = (now or timezone.now()) - UNPAID_ORDER_TTL
+    stale = Order.objects.filter(
+        status=Order.Status.NEW,
+        payment_method=Order.PaymentMethod.ONLINE,
+        payment_status=Order.PaymentStatus.UNPAID,
+        created_at__lt=deadline,
+    )
+    cancelled = 0
+    for order_id in stale.values_list("pk", flat=True):
+        with transaction.atomic():
+            order = stale.select_for_update(skip_locked=True).filter(pk=order_id).first()
+            if order is None:
+                continue
+            _set_status(order, Order.Status.CANCELLED, changed_by=None)
+            cancelled += 1
+    if cancelled:
+        logger.info("Отменено неоплаченных заказов: %s", cancelled)
+    return cancelled
 
 
 def _set_status(order: Order, to_status: str, *, changed_by) -> None:

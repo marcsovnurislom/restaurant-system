@@ -48,6 +48,8 @@ LOCAL_APPS = [
     "apps.orders",
     "apps.payments",
     "apps.kitchen",
+    "apps.notifications",
+    "apps.analytics",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -196,6 +198,22 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 5 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 4 * 60
+# Задача подтверждается после выполнения: если воркер упал посередине, её возьмёт другой.
+# Поэтому периодические задачи сделаны идемпотентными.
+CELERY_TASK_ACKS_LATE = True
+
+CELERY_BEAT_SCHEDULE = {
+    "cancel-unpaid-orders": {
+        "task": "apps.orders.tasks.cancel_unpaid_orders",
+        "schedule": 60.0,
+    },
+    "send-reservation-reminders": {
+        "task": "apps.reservations.tasks.send_reservation_reminders",
+        "schedule": 5 * 60.0,
+    },
+}
+
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Чайхана Bahor <noreply@bahor.local>")
 
 # --- Интеграции ---------------------------------------------------------------
 
