@@ -1,0 +1,25 @@
+<!doctype html>
+{# Без наследования от base.html и без тегов шаблона: при ошибке сервера #}
+{# может не работать что угодно, включая БД и контекст-процессоры #}
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ошибка сервера — Чайхана Bahor</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #fffaf3; color: #2b2118; }
+    main { max-width: 560px; margin: 15vh auto; padding: 0 16px; }
+    .code { margin: 0; color: #c2410c; font-size: 64px; font-weight: 800; }
+    a { color: #c2410c; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="code">500</p>
+    <h1>Что-то сломалось на нашей стороне</h1>
+    <p>Мы уже знаем о проблеме. Попробуйте обновить страницу через минуту
+      или позвоните нам: <a href="tel:+998712000000">+998 71 200-00-00</a>.</p>
+    <p><a href="/">На главную</a></p>
+  </main>
+</body>
+</html>

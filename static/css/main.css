@@ -25,6 +25,12 @@
   box-sizing: border-box;
 }
 
+/* Атрибут hidden должен скрывать всегда. Без !important его перебивает
+   любое правило с display (например, .status), и бейдж «Оплачен» был виден у неоплаченного заказа */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -1203,6 +1209,18 @@ img {
   .dash-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.error-page {
+  padding: 40px 16px;
+}
+
+.error-page__code {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 /* ---------- Подвал ---------- */

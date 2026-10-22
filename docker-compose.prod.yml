@@ -1,0 +1,107 @@
+# Продакшен на одном сервере: docker compose -f docker-compose.prod.yml up -d --build
+# Подробно — docs/deploy.md
+
+x-app: &app
+  build:
+    context: .
+    target: prod
+  image: restaurant-system:latest
+  env_file: .env.prod
+  restart: unless-stopped
+  volumes:
+    # Фото блюд из админки: переживают пересоздание контейнера
+    - media:/app/media
+
+x-depends: &depends
+  db:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  migrate:
+    condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Порт наружу не открыт: БД доступна только контейнерам приложения
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # AOF: очередь задач Celery не потеряется при перезапуске Redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Миграции — отдельный одноразовый шаг: web и воркеры стартуют только после
+  # успешной миграции, и несколько копий web не мигрируют БД одновременно
+  migrate:
+    <<: *app
+    restart: "no"
+    command: python manage.py migrate --noinput
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    depends_on: *depends
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  celery:
+    <<: *app
+    command: celery -A config worker -l info --concurrency 2
+    depends_on: *depends
+
+  celery-beat:
+    <<: *app
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+    depends_on: *depends
+
+  # Reverse-proxy с автоматическим HTTPS (сертификат Let's Encrypt без настройки)
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - media:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  media:
+  caddy_data:
+  caddy_config:

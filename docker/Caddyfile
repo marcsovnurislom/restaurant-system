@@ -1,0 +1,22 @@
+# Caddy получает и продлевает HTTPS-сертификат для домена сам.
+# WebSocket (/ws/...) проксируется автоматически, отдельная настройка не нужна.
+# Входящий X-Forwarded-For от клиента Caddy не доверяет и ставит реальный IP:
+# на это рассчитаны Daphne (--proxy-headers) и DRF (NUM_PROXIES=1).
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Фото блюд, загруженные через админку
+	handle_path /media/* {
+		root * /srv/media
+		header Cache-Control "public, max-age=604800"
+		file_server
+	}
+
+	# Всё остальное, включая статику (её отдаёт WhiteNoise со сжатием и кэшем)
+	handle {
+		reverse_proxy web:8000
+	}
+
+	header -Server
+}

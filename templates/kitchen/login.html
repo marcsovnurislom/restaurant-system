@@ -8,6 +8,9 @@
     <form method="post" class="card form login-form" novalidate>
       {% csrf_token %}
       <h1 class="page-title">Вход для персонала</h1>
+      {% if lockout_message %}
+        <div class="alert alert--error" role="alert"><p>{{ lockout_message }}</p></div>
+      {% endif %}
       {% if form.non_field_errors %}
         <div class="alert alert--error" role="alert">
           {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}

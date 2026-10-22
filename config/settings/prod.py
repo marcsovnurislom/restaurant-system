@@ -16,7 +16,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# HTTPS за reverse-proxy (Nginx, Railway, Render)
+# HTTPS за reverse-proxy (Caddy, Railway, Render)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = True
@@ -30,6 +30,20 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 if not SECURE_HSTS_PRELOAD:
     SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
+# Общий кэш для всех процессов: счётчики лимитов запросов (throttling) и попыток
+# входа должны быть одни на всё приложение, а не свои в памяти каждого процесса
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("CACHE_URL", default=REDIS_URL.rsplit("/", 1)[0] + "/1"),
+    }
+}
+
+# Приложение работает за одним reverse-proxy (Caddy). DRF берёт IP клиента
+# из X-Forwarded-For с учётом этого числа. Без настройки IP можно подделать
+# заголовком и обойти лимит на попытки входа.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env.int("NUM_PROXIES", default=1)}
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
@@ -37,3 +51,5 @@ STORAGES = {
 
 EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
 vars().update(EMAIL_CONFIG)
+
+LOGGING["root"]["level"] = env("LOG_LEVEL", default="INFO")

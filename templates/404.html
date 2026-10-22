@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Страница не найдена — Чайхана Bahor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container container--narrow error-page">
+    <p class="error-page__code">404</p>
+    <h1 class="page-title">Страница не найдена</h1>
+    <p class="lead">Возможно, блюдо закончилось или ссылка устарела.</p>
+    <div class="actions">
+      <a class="button" href="{% url 'menu:menu-list' %}">Открыть меню</a>
+      <a class="button button--secondary" href="{% url 'menu:home' %}">На главную</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

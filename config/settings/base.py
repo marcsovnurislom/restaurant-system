@@ -55,6 +55,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    "config.middleware.HealthCheckMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -101,6 +102,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- Пользователи -------------------------------------------------------------
 
 AUTH_USER_MODEL = "users.User"
+
+# Админка не по стандартному /admin/: меньше автоматических попыток подобрать пароль
+ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
+
+# Защита формы входа персонала от перебора паролей: попыток с одного IP
+LOGIN_ATTEMPTS_LIMIT = env.int("LOGIN_ATTEMPTS_LIMIT", default=10)
+LOGIN_LOCKOUT_SECONDS = 15 * 60
 
 LOGIN_URL = "kitchen:login"
 LOGIN_REDIRECT_URL = "kitchen:board"

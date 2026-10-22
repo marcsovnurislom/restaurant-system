@@ -1,22 +1,45 @@
 # Restaurant System
 
-Система управления рестораном: меню, бронирование столиков, онлайн-заказы,
-экран кухни в реальном времени и аналитика для владельца.
+[English version](README.en.md)
+
+Система управления рестораном на Django: сайт для гостей, REST API, экран
+кухни в реальном времени и аналитика для владельца. Демо-заведение —
+узбекская чайхана «Bahor».
 
 **Стек:** Python 3.12 · Django 5.2 · Django REST Framework · PostgreSQL 16 ·
-Celery + Redis · Django Channels · Docker · pytest · GitHub Actions
+Celery + Redis · Django Channels (WebSocket) · Docker · Caddy · pytest · GitHub Actions
 
-## Статус разработки
+<p>
+  <img src="docs/screenshots/home.png" width="49%" alt="Главная страница">
+  <img src="docs/screenshots/menu.png" width="49%" alt="Меню с фильтром по тегам">
+</p>
+<p>
+  <img src="docs/screenshots/reservation.png" width="49%" alt="Бронирование с подбором свободного времени">
+  <img src="docs/screenshots/order-status.png" width="49%" alt="Страница заказа со статусом в реальном времени">
+</p>
 
-| Этап | Что входит | Статус |
-|---|---|---|
-| 1. Каркас | Docker, настройки, пользователи с ролями, JWT, CI | ✅ |
-| 2. Меню и столы | Категории, блюда, стоп-лист, QR-коды столов, сайт меню | ✅ |
-| 3. Бронирование | Автоподбор стола, защита от двойной брони, форма на сайте | ✅ |
-| 4. Заказы и оплата | Корзина, state machine статусов, Stripe test mode, webhook | ✅ |
-| 5. Real-time | Экран кухни и статус заказа через WebSocket | ✅ |
-| 6. Фоновые задачи и аналитика | Напоминания, автоотмена, Telegram, дашборд | ✅ |
-| 7. Продакшен | Деплой, финальная документация | ⏳ |
+## Возможности
+
+**Для гостей**
+- Меню с категориями, тегами (острое, вегетарианское, хит) и стоп-листом.
+- Бронирование столика: свободное время подгружается при выборе даты,
+  стол подбирается автоматически, двойная бронь исключена на уровне БД.
+- Корзина и заказ на доставку, самовывоз или к столу по QR-коду.
+- Онлайн-оплата через Stripe и страница заказа, статус на которой обновляется сам.
+- Личные ссылки на бронь и заказ: всё работает без регистрации.
+
+**Для персонала**
+- Роли: администратор, менеджер, официант, повар, курьер.
+- Экран кухни: новые заказы появляются без перезагрузки, у каждой роли свои кнопки.
+- Статусы заказа по правилам state machine с историей изменений.
+- Уведомления менеджеру в Telegram о заказах и бронях.
+- Дашборд: выручка по дням, топ блюд, загрузка по часам, сравнение с прошлым периодом.
+
+**Под капотом**
+- 380+ тестов, покрытие ~98%, CI на PostgreSQL с проверкой Docker-образа.
+- Фоновые задачи: автоотмена неоплаченных заказов, напоминания о брони.
+- Продакшен на одном сервере: `docker compose` + Caddy с автоматическим HTTPS
+  ([инструкция по деплою](docs/deploy.md)).
 
 ## Быстрый старт
 
@@ -26,6 +49,9 @@ Celery + Redis · Django Channels · Docker · pytest · GitHub Actions
 cp .env.example .env
 docker compose up --build
 ```
+
+Если порт 8000 занят (на Windows его иногда резервирует система), выбери другой:
+`WEB_PORT=8765 docker compose up --build`.
 
 Создать администратора и заполнить базу демо-данными (меню узбекской кухни,
 10 столов, сотрудники `demo_manager`, `demo_cook`, `demo_waiter`, `demo_courier`
@@ -87,6 +113,26 @@ docker compose exec web python manage.py seed_data --with-staff --with-orders 30
 docker compose exec web pytest --cov
 docker compose exec web ruff check .
 ```
+
+Без Docker тоже можно: тесты идут на SQLite, а 3 теста, которым нужен PostgreSQL
+(параллельные брони и EXCLUDE-constraint), пропускаются. В CI они выполняются.
+
+```bash
+python -m venv .venv && .venv/bin/pip install -r requirements/dev.txt
+DATABASE_URL=sqlite:///db.sqlite3 .venv/bin/pytest
+```
+
+CI ([ci.yml](.github/workflows/ci.yml)) на каждый push и pull request:
+1. **lint:** ruff check и ruff format.
+2. **test:** тесты на PostgreSQL 16 с покрытием от 70%, проверка миграций и `check --deploy`.
+3. **docker:** сборка продакшен-образа, проверка `docker-compose.prod.yml`, запуск
+   контейнера и ответ `/health/`.
+
+## Деплой
+
+Продакшен на одном VPS: `docker compose -f docker-compose.prod.yml up -d --build`
+поднимает Caddy (HTTPS), Daphne, Celery, PostgreSQL и Redis. Пошаговая инструкция,
+резервные копии и обновление описаны в [docs/deploy.md](docs/deploy.md).
 
 ## API
 
@@ -173,12 +219,16 @@ stateDiagram-v2
 
 ```mermaid
 flowchart LR
-    Browser[Браузер / мобильное приложение] --> Web[Django + DRF]
+    Browser[Браузер / мобильное приложение] -->|HTTPS, WSS| Caddy
+    Caddy --> Web[Django + DRF + Channels<br/>на Daphne]
     Web --> DB[(PostgreSQL)]
-    Web --> Redis[(Redis)]
+    Web <-->|кэш, слой каналов| Redis[(Redis)]
     Redis --> Worker[Celery worker]
     Beat[Celery beat] --> Redis
     Worker --> DB
+    Worker -->|уведомления| Telegram[Telegram Bot API]
+    Web -->|оплата| Stripe[Stripe Checkout]
+    Stripe -->|webhook| Web
 ```
 
 ```
@@ -199,7 +249,9 @@ apps/
     selectors.py   сложные запросы на чтение
     tests/
 templates/         HTML-шаблоны сайта
-static/css/        стили
+static/            стили и JS (экран кухни, живой статус, графики)
+docker/Caddyfile   reverse-proxy для продакшена
+docs/              инструкция по деплою, скриншоты
 ```
 
 ## Технические решения
@@ -317,3 +369,24 @@ static/css/        стили
 - **Продакшен-настройки без значений по умолчанию для секретов.**
   Если `DJANGO_SECRET_KEY` не задан, приложение не запустится.
   CI проверяет настройки через `manage.py check --deploy`.
+
+### Продакшен
+
+- **Реальный IP клиента за прокси.** Без настройки DRF брал бы IP из
+  `X-Forwarded-For`, который клиент может подделать, и лимит на попытки входа
+  обходился бы сменой заголовка. Поэтому Caddy перезаписывает заголовок,
+  Daphne запущен с `--proxy-headers`, а в DRF задан `NUM_PROXIES=1`.
+  Всё это закреплено тестом.
+- **Кэш в Redis, а не в памяти процесса.** Иначе у каждого процесса был бы свой
+  счётчик лимитов, и реальный лимит рос бы пропорционально числу процессов.
+- **Блокировка перебора паролей на форме входа персонала.** При блокировке
+  пароль даже не проверяется: время ответа не выдаёт, верный ли он.
+- **Health-check в отдельном middleware.** Docker обращается по HTTP к
+  `127.0.0.1`, а обычный путь вернул бы 301 на HTTPS или 400 из-за
+  `ALLOWED_HOSTS`, и контейнер считался бы нездоровым.
+- **Миграции отдельным одноразовым сервисом.** `web` и воркеры стартуют после
+  успешной миграции, и две копии `web` не мигрируют БД одновременно.
+- **Один Dockerfile, два образа.** `dev` с инструментами разработки, `prod`
+  только с нужными пакетами и собранной статикой. Работают не от root.
+- **Caddy вместо Nginx.** HTTPS-сертификат получается и продлевается сам,
+  WebSocket проксируется без отдельной настройки.

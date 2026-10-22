@@ -11,6 +11,7 @@ venv/
 
 # Окружение и секреты
 .env
+.env.prod
 
 # Тесты
 .coverage

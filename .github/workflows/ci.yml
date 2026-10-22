@@ -52,4 +52,38 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.prod
           DJANGO_SECRET_KEY: ci-only-secret-key-that-is-long-enough-to-pass-the-deploy-check-1234567890
           DJANGO_ALLOWED_HOSTS: example.com
+      # Тесты бронирования на PostgreSQL (параллельные брони, EXCLUDE-constraint)
+      # здесь выполняются, а не пропускаются, как на SQLite
       - run: pytest --cov --cov-report=term-missing --cov-fail-under=70
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Продакшен-compose корректен
+        run: |
+          cp .env.prod.example .env.prod
+          docker compose -f docker-compose.prod.yml config --quiet
+      - name: Продакшен-образ собирается (включая collectstatic)
+        run: docker build --target prod --tag restaurant-system:ci .
+      - name: Приложение в образе стартует и отвечает на /health/
+        run: |
+          docker network create ci
+          docker run -d --name db --network ci \
+            -e POSTGRES_DB=restaurant -e POSTGRES_USER=restaurant -e POSTGRES_PASSWORD=restaurant \
+            postgres:16-alpine
+          docker run -d --name redis --network ci redis:7-alpine
+          sleep 5
+          ENV="-e DJANGO_SETTINGS_MODULE=config.settings.prod
+               -e DJANGO_SECRET_KEY=ci-only-secret-key-that-is-long-enough-1234567890
+               -e DJANGO_ALLOWED_HOSTS=example.com
+               -e DATABASE_URL=postgres://restaurant:restaurant@db:5432/restaurant
+               -e REDIS_URL=redis://redis:6379/0"
+          docker run --rm --network ci $ENV restaurant-system:ci python manage.py migrate --noinput
+          docker run -d --name web --network ci -p 8000:8000 $ENV restaurant-system:ci
+          for attempt in $(seq 1 20); do
+            curl --fail --silent http://localhost:8000/health/ && exit 0
+            sleep 2
+          done
+          docker logs web
+          exit 1
